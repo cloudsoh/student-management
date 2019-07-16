@@ -10,16 +10,21 @@ module.exports = (sequelize, DataTypes) => {
     }
   }, {});
   Teacher.associate = function(models) {
-    Teacher.hasMany(models.Student, {
-      foreignKey: 'registeredBy',
-      sourceKey: 'id'
+    Teacher.belongsToMany(models.Student, {
+      through: 'StudentTeacher',
     });
   };
   Teacher.prototype.registerStudents = function (studentsEmail) {
-   return sequelize.models.Student.bulkCreate(
-     studentsEmail.map((email) => ({email, registeredBy: this.id })),
-     { validate: true }
-    );
+    return sequelize.transaction(async t => {
+      const students = await Promise.all(studentsEmail.map(async (email) => {
+        const [ student ] =  await sequelize.models.Student.findOrCreate({
+          where: {
+            email
+          }, transaction: t })
+          return student;
+        }))
+      return this.addStudents(students, { transaction: t });
+    })
   }
   return Teacher;
 };

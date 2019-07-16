@@ -41,7 +41,7 @@ function extractValidationErrorMessages(e, messages = []) {
 function sequelizeHandler(err, req, res, next) {
     if (!err.forEach) err = [err]
 
-    let messages = [];
+    let messages = {};
     err.forEach((error) => {
         if (error instanceof BulkRecordError) {
             error = error.errors;

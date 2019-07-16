@@ -11,9 +11,8 @@ module.exports = (sequelize, DataTypes) => {
     suspendedAt: DataTypes.DATE,
   }, {});
   Student.associate = function(models) {
-    Student.belongsTo(models.Teacher, {
-      foreignKey: 'registeredBy',
-      targetKey: 'id'
+    Student.belongsToMany(models.Teacher, {
+      through: 'StudentTeacher',
     });
   };
   return Student;

@@ -11,6 +11,8 @@ import sequelizeHandler from './core/handlers/sequelize-error-handler';
 
 const app = express();
 
+// app.use(async () => await sequelize.sync());
+
 sequelize.sync();
 app.use(logger('dev'));
 app.use(express.json());
@@ -25,6 +27,12 @@ app.use((req, res, next) => {
 })
 app.use(sequelizeHandler)
 app.use((err, req, res, next) => {
-    res.status(500).send("Interal Server Error.")
+    console.error(err);
+    console.error(err.message);
+    if (process.env.NODE_ENV === 'production') {
+        res.status(500).send("Interal Server Error.")
+    } else {
+        res.status(500).send(err.message)
+    }
 })
 module.exports = app;

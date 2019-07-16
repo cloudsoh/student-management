@@ -2,6 +2,7 @@ import request from 'supertest';
 import app from '../app';
 import models from '../models';
 import { Op } from 'sequelize';
+import queryString from 'query-string';
 
 function refreshDatabase() {
     return models.sequelize.sync({ force: true })
@@ -32,15 +33,23 @@ describe('As a teacher, I want to register one or more students to a specified t
                 email: {
                     [Op.in]: params.students
                 }
-            }
+            },
+            include: [{
+                model: models.Teacher,
+            }]
         })
         expect(students.length).toBe(params.students.length)
         expect(students).toEqual(
             expect.arrayContaining([
-              expect.objectContaining({
-                email: 'studentjon@example.com',
-                registeredBy: teacher.id
-              })
+                expect.objectContaining({
+                    email: 'studentjon@example.com',
+                    Teachers: 
+                        expect.arrayContaining([
+                            expect.objectContaining({
+                            id: teacher.id
+                        })
+                    ])
+                })
             ])
           )
         done()
@@ -67,17 +76,47 @@ describe('As a teacher, I want to register one or more students to a specified t
             .expect(422);
         done()
     })
-
-    it('Fail Case (Student email exist)', async done => {
-        await getTeacher(params.teacher);
-        await agent.post('/api/register')
-            .set('Content-Type', 'application/json')
-            .send(params)
-            .expect(204);
-        await agent.post('/api/register')
-            .set('Content-Type', 'application/json')
-            .send(params)
-            .expect(422);
+})
+describe('As a teacher, I want to retrieve a list of students common to a given list of teachers(i.e. retrieve students who are registered to ALL of the given teachers).', async () => {
+    const teachers = [
+        'teacherken@example.com',
+        'teacherjoe@example.com'
+    ]
+    beforeAll(async () => {
+        await refreshDatabase
+        const [ teacherA ] = await models.Teacher.findOrCreate({ where: { email: teachers[0] }});
+        await teacherA.registerStudents([
+            'commonstudent1@gmail.com',
+            'commonstudent2@gmail.com',
+            'student_only_under_teacher_ken@gmail.com'
+        ])
+        const [ teacherB ] = await models.Teacher.findOrCreate({ where: { email: teachers[1] }});
+        await teacherB.registerStudents([
+            'commonstudent1@gmail.com',
+            'commonstudent2@gmail.com',
+            'student_only_under_teacher_joe@gmail.com'
+        ])
+    })
+    
+    it('Success Response 1(Get Teacher Ken)', async done => {
+        const query = queryString.stringify({ teacher: [ teachers[0] ]});
+        await agent.get(`/api/commonstudents?${query}`).expect(200).expect({
+            students: [
+                'commonstudent1@gmail.com',
+                'commonstudent2@gmail.com',
+                'student_only_under_teacher_ken@gmail.com'
+            ]
+        })
+        done()
+    })
+    it('Success Response 1(Get Teacher Ken)', async done => {
+        const query = queryString.stringify({ teacher: teachers });
+        await agent.get(`/api/commonstudents?${query}`).expect(200).expect({
+            students: [
+                'commonstudent1@gmail.com',
+                'commonstudent2@gmail.com',
+            ]
+        })
         done()
     })
 })
