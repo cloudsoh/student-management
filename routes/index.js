@@ -1,5 +1,6 @@
 import models from '../models';
 import asyncHandler from '../core/async-handler';
+import { check, validationResult } from 'express-validator';
 
 const Op = models.Sequelize.Op;
 const sequelize = models.sequelize;
@@ -7,7 +8,11 @@ var express = require('express');
 var router = express.Router();
 
 
-router.post('/register', asyncHandler(async (req, res, next) => {
+router.post('/register', [
+  check('teacher').isEmail(),
+  check('students').isArray(),
+  check('students.*').isEmail(),
+], asyncHandler(async (req, res, next) => {
   const { teacher: teacherEmail, students: studentsEmail } = req.body;
   const teacher = await models.Teacher.findOne({
     where: {
@@ -22,7 +27,9 @@ router.post('/register', asyncHandler(async (req, res, next) => {
   res.sendStatus(204);
 }));
 
-router.get('/commonstudents', asyncHandler(async (req, res, next) => {
+router.get('/commonstudents', [
+  check('teacher').isEmail()
+], asyncHandler(async (req, res, next) => {
   const { teacher: teacherEmail } = req.query;
   const teacherEmails = Array.isArray(teacherEmail) ? teacherEmail : [teacherEmail];
   const data = await models.StudentTeacher.findAll({
@@ -51,14 +58,19 @@ router.get('/commonstudents', asyncHandler(async (req, res, next) => {
   res.status(200).send({ students })
 }));
 
-router.post('/suspend', asyncHandler(async (req, res, next) => {
+router.post('/suspend', [
+  check('student').isEmail()
+], asyncHandler(async (req, res, next) => {
   const { student: email } = req.body;
 
   const result = await models.Student.update({ suspendedAt: Date.now() }, { where: { email }})
   res.sendStatus(204)
 }))
 
-router.post('/retrievefornotifications', asyncHandler(async (req, res, next) => {
+router.post('/retrievefornotifications', [
+  check('teacher').isEmail(),
+  check('notification').isString()
+], asyncHandler(async (req, res, next) => {
   const { teacher: teacherEmail, notification } = req.body
 
   const teacher = await models.Teacher.findOne({ where: { email: teacherEmail }})

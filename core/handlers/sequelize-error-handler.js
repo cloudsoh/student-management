@@ -53,6 +53,6 @@ function sequelizeHandler(err, req, res, next) {
 
     if (Object.keys(messages).length < 1) return next(err)
 
-    res.status(422).send({ messages })
+    res.status(422).send({ errors: messages })
 } 
 export default sequelizeHandler;
