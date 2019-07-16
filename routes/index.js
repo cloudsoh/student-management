@@ -18,7 +18,7 @@ router.post('/register', asyncHandler(async (req, res, next) => {
     res.status(404).send('Teacher not found');
     return;
   }
-  const response = await teacher.registerStudents(studentsEmail);
+  const result = await teacher.registerStudents(studentsEmail);
   res.sendStatus(204);
 }));
 
@@ -54,8 +54,47 @@ router.get('/commonstudents', asyncHandler(async (req, res, next) => {
 router.post('/suspend', asyncHandler(async (req, res, next) => {
   const { student: email } = req.body;
 
-  const response = await models.Student.update({ suspendedAt: Date.now() }, { where: { email }})
+  const result = await models.Student.update({ suspendedAt: Date.now() }, { where: { email }})
   res.sendStatus(204)
+}))
+
+router.post('/retrievefornotifications', asyncHandler(async (req, res, next) => {
+  const { teacher: teacherEmail, notification } = req.body
+
+  const teacher = await models.Teacher.findOne({ where: { email: teacherEmail }})
+  let students = await teacher.getStudents({ 
+    attributes: ['email'],
+    where: {
+      suspendedAt: {
+        [Op.eq]: null
+      }
+    }
+  })
+
+  const myRegexp = /@(\w*@\w*\.\S+)/g;
+  let match = myRegexp.exec(notification);
+  const taggedStudentsEmail = []
+
+  while (match) {
+    taggedStudentsEmail.push(match[1])
+    match = myRegexp.exec(notification);
+  }
+
+  const taggedStudents = await models.Student.findAll({
+    attributes: ['email'],
+    where: {
+      email: {
+        [Op.in]: taggedStudentsEmail
+      },
+      suspendedAt: {
+        [Op.eq]: null
+      }
+    }
+  })
+
+  students = students.concat(taggedStudents).map(({ email }) => email)
+
+  res.status(200).send({ recipients: [ ...new Set(students)] })
 }))
 
 module.exports = router;

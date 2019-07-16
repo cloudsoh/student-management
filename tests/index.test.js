@@ -78,7 +78,7 @@ describe('As a teacher, I want to register one or more students to a specified t
         done()
     })
 })
-describe('As a teacher, I want to retrieve a list of students common to a given list of teachers(i.e. retrieve students who are registered to ALL of the given teachers).', async () => {
+describe('As a teacher, I want to retrieve a list of students common to a given list of teachers(i.e. retrieve students who are registered to ALL of the given teachers).', () => {
     const teachers = [
         'teacherken@example.com',
         'teacherjoe@example.com'
@@ -122,14 +122,14 @@ describe('As a teacher, I want to retrieve a list of students common to a given 
     })
 })
 
-describe('As a teacher, I want to suspend a specified student.', async () => {
+describe('As a teacher, I want to suspend a specified student.', () => {
     const studentEmail = 'studentmary@gmail.com'
     beforeAll(async () => {
         await refreshDatabase()
         const teacher = await getTeacher('foo@bar.com');
         await teacher.registerStudents([studentEmail])
     });
-    it('Success Response 1', async done => {
+    it('Success Response 1(Suspend Mary)', async done => {
         await agent.post('/api/suspend')
             .set('Content-Type', 'application/json')
             .send({
@@ -138,6 +138,48 @@ describe('As a teacher, I want to suspend a specified student.', async () => {
             .expect(204);
         const student = await models.Student.findOne({ where: { email: studentEmail }})
         expect(student.suspendedAt).not.toBeNull()
+        done()
+    })
+});
+describe('As a teacher, I want to retrieve a list of students who can receive a given notification', () => {
+    const studentsEmail = [
+        'studentagnes@example.com',
+        'studentmiche@example.com'
+    ]
+    const teacherEmail = 'teacherken@example.com'
+    const teacherStudentsEmail = ['studentbob@example.com']
+    beforeAll(async () => {
+        await refreshDatabase()
+        const teacher = await getTeacher(teacherEmail);
+        await teacher.registerStudents(teacherStudentsEmail)
+        const teacherB = await getTeacher('foo@bar.com');
+        await teacherB.registerStudents(studentsEmail)
+    });
+    it('Success Response 1(Tagged students)', async done => {
+        await agent.post('/api/retrievefornotifications')
+            .set('Content-Type', 'application/json')
+            .send({
+                teacher: teacherEmail,
+                notification: 'Hello students! ' + studentsEmail.map(email => `@${email}`).join(' ')
+            })
+            .expect(200)
+            .expect({
+                recipients: teacherStudentsEmail.concat(studentsEmail)
+            });
+        done()
+    })
+
+    it('Success Response 2(Own students only)', async done => {
+        await agent.post('/api/retrievefornotifications')
+            .set('Content-Type', 'application/json')
+            .send({
+                teacher: teacherEmail,
+                notification: 'Hey everybody!'
+            })
+            .expect(200)
+            .expect({
+                recipients: teacherStudentsEmail
+            });
         done()
     })
 });
