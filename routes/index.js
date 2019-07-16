@@ -1,14 +1,11 @@
 import models from '../models';
+import asyncHandler from '../core/async-handler';
 
 var express = require('express');
 var router = express.Router();
 
-/* GET home page. */
-router.get('/', function(req, res, next) {
-  res.render('index', { title: 'Expressa' });
-});
 
-router.post('/register', async (req, res, next) => {
+router.post('/register', asyncHandler(async (req, res, next) => {
   const { teacher: teacherEmail, students: studentsEmail } = req.body;
   const teacher = await models.Teacher.findOne({
     where: {
@@ -21,6 +18,6 @@ router.post('/register', async (req, res, next) => {
   }
   await teacher.registerStudents(studentsEmail);
   res.sendStatus(204);
-});
+}));
 
 module.exports = router;

@@ -56,11 +56,24 @@ describe('As a teacher, I want to register one or more students to a specified t
 
     it('Fail Case (Student email format)', async done => {
         await getTeacher(params.teacher);
-        const newParams = Object.assign({}, params);
+        const newParams = JSON.parse(JSON.stringify(params));
         newParams.students.push('foobar');
         newParams.students.push('barfoo');
         newParams.students.push('boomba');
 
+        await agent.post('/api/register')
+            .set('Content-Type', 'application/json')
+            .send(newParams)
+            .expect(422);
+        done()
+    })
+
+    it('Fail Case (Student email exist)', async done => {
+        await getTeacher(params.teacher);
+        await agent.post('/api/register')
+            .set('Content-Type', 'application/json')
+            .send(params)
+            .expect(204);
         await agent.post('/api/register')
             .set('Content-Type', 'application/json')
             .send(params)
