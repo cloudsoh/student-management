@@ -4,15 +4,17 @@ module.exports = (sequelize, DataTypes) => {
     email: {
       type: DataTypes.STRING,
       unique: true,
+      validate: {
+        isEmail: true,
+      }
     },
-    registeredBy: DataTypes.INTEGER,
     suspendedAt: DataTypes.DATE,
   }, {});
   Student.associate = function(models) {
     Student.belongsTo(models.Teacher, {
-      foreignKey: 'id',
+      foreignKey: 'registeredBy',
+      targetKey: 'id'
     });
-    // associations can be defined here
   };
   return Student;
 };
