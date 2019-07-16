@@ -8,6 +8,11 @@ function refreshDatabase() {
     return models.sequelize.sync({ force: true })
 }
 
+async function getTeacher(email) {
+    const [teacher] = await models.Teacher.findOrCreate({ where: { email }});
+    return teacher;
+}
+
 const agent = request.agent(app);
 describe('As a teacher, I want to register one or more students to a specified teacher.', () => {
     beforeEach(refreshDatabase)
@@ -17,10 +22,6 @@ describe('As a teacher, I want to register one or more students to a specified t
             'studentjon@example.com',
             'studenthon@example.com',
         ]
-    }
-    async function getTeacher(email) {
-        const [teacher] = await models.Teacher.findOrCreate({ where: { email }});
-        return teacher;
     }
     it('Success Case', async done => {
         const teacher = await getTeacher(params.teacher);
@@ -83,14 +84,14 @@ describe('As a teacher, I want to retrieve a list of students common to a given 
         'teacherjoe@example.com'
     ]
     beforeAll(async () => {
-        await refreshDatabase
-        const [ teacherA ] = await models.Teacher.findOrCreate({ where: { email: teachers[0] }});
+        await refreshDatabase()
+        const teacherA = await getTeacher(teachers[0]);
         await teacherA.registerStudents([
             'commonstudent1@gmail.com',
             'commonstudent2@gmail.com',
             'student_only_under_teacher_ken@gmail.com'
         ])
-        const [ teacherB ] = await models.Teacher.findOrCreate({ where: { email: teachers[1] }});
+        const teacherB = await getTeacher(teachers[1]);
         await teacherB.registerStudents([
             'commonstudent1@gmail.com',
             'commonstudent2@gmail.com',
@@ -109,7 +110,7 @@ describe('As a teacher, I want to retrieve a list of students common to a given 
         })
         done()
     })
-    it('Success Response 1(Get Teacher Ken)', async done => {
+    it('Success Response 1(Get Teacher Ken and Joe)', async done => {
         const query = queryString.stringify({ teacher: teachers });
         await agent.get(`/api/commonstudents?${query}`).expect(200).expect({
             students: [
@@ -120,3 +121,23 @@ describe('As a teacher, I want to retrieve a list of students common to a given 
         done()
     })
 })
+
+describe('As a teacher, I want to suspend a specified student.', async () => {
+    const studentEmail = 'studentmary@gmail.com'
+    beforeAll(async () => {
+        await refreshDatabase()
+        const teacher = await getTeacher('foo@bar.com');
+        await teacher.registerStudents([studentEmail])
+    });
+    it('Success Response 1', async done => {
+        await agent.post('/api/suspend')
+            .set('Content-Type', 'application/json')
+            .send({
+                student: studentEmail
+            })
+            .expect(204);
+        const student = await models.Student.findOne({ where: { email: studentEmail }})
+        expect(student.suspendedAt).not.toBeNull()
+        done()
+    })
+});

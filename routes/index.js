@@ -51,4 +51,11 @@ router.get('/commonstudents', asyncHandler(async (req, res, next) => {
   res.status(200).send({ students })
 }));
 
+router.post('/suspend', asyncHandler(async (req, res, next) => {
+  const { student: email } = req.body;
+
+  const response = await models.Student.update({ suspendedAt: Date.now() }, { where: { email }})
+  res.sendStatus(204)
+}))
+
 module.exports = router;
