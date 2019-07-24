@@ -41,12 +41,21 @@ router.get('/commonstudents', [
   check('teacher').isEmail()
 ], asyncHandler(async (req, res, next) => {
   const { teacher: teacherEmail } = req.query;
+  // teacher may be a string or array, convert it to array.
   const teacherEmails = Array.isArray(teacherEmail) ? teacherEmail : [teacherEmail];
+
+  // Query that find the students that has been shared across all the teacher provided
   const data = await models.StudentTeacher.findAll({
     attributes: [
+      // Count of student-teacher relationship that is taught by these teachers
       [sequelize.fn('COUNT', sequelize.col('*')), 'count']
     ],
-    group: ['Student.email'],
+    group: ['Student.email', 'Student.id'],
+
+    // Only get the students which the count = given teacher
+    // Since I only query these teachers' student, 
+    // If the queried student's "teacher count" is equal to given teacher's length
+    // Then it is taught by all the teachers given.
     having: sequelize.where(sequelize.col('count'), '=', teacherEmails.length),
     include: [
       {
@@ -84,6 +93,7 @@ router.post('/retrievefornotifications', [
   const { teacher: teacherEmail, notification } = req.body
 
   const teacher = await models.Teacher.findOne({ where: { email: teacherEmail }})
+  // Get teacher's students
   let students = await teacher.getStudents({ 
     attributes: ['email'],
     where: {
@@ -97,11 +107,13 @@ router.post('/retrievefornotifications', [
   let match = myRegexp.exec(notification);
   const taggedStudentsEmail = []
 
+  // Get the email after '@'
   while (match) {
     taggedStudentsEmail.push(match[1])
     match = myRegexp.exec(notification);
   }
 
+  // Find all the tagged email from the students table
   const taggedStudents = await models.Student.findAll({
     attributes: ['email'],
     where: {
@@ -114,8 +126,10 @@ router.post('/retrievefornotifications', [
     }
   })
 
+  // Combine teacher's self students and tagged students
   students = students.concat(taggedStudents).map(({ email }) => email)
 
+  // Only respond the non-duplicating students
   res.status(200).send({ recipients: [ ...new Set(students)] })
 }))
 
