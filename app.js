@@ -3,6 +3,8 @@ import express from 'express';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import logger from 'morgan';
+import fs from 'fs';
+import util from 'util'
 
 import indexRouter from './routes/index';
 import usersRouter from './routes/users';
@@ -11,7 +13,14 @@ import sequelizeHandler from './core/handlers/sequelize-error-handler';
 
 const app = express();
 
-// app.use(async () => await sequelize.sync());
+var log_file = fs.createWriteStream(__dirname + '/debug.log', {flags : 'a'});
+    
+var log_stdout = process.stdout;
+
+console.error = function(d) { //
+  log_file.write(util.format(d) + '\n');
+  log_stdout.write(util.format(d) + '\n');
+};
 
 sequelize.sync();
 app.use(logger('dev'));
@@ -27,7 +36,6 @@ app.use((req, res, next) => {
 app.use(sequelizeHandler)
 app.use((err, req, res, next) => {
     console.error(err);
-    console.error(err.message);
     if (process.env.NODE_ENV === 'production') {
         res.status(500).send("Interal Server Error.")
     } else {
