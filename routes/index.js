@@ -8,6 +8,16 @@ var express = require('express');
 var router = express.Router();
 
 
+router.post('/teachers', [
+  check('email').isEmail(),
+], asyncHandler(async (req, res, next) => {
+  const { email } = req.body;
+  
+  await models.Teacher.create({ email })
+
+  res.sendStatus(204);
+}));
+
 router.post('/register', [
   check('teacher').isEmail(),
   check('students').isArray(),
