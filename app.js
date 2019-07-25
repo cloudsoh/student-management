@@ -7,7 +7,6 @@ import fs from 'fs';
 import util from 'util'
 
 import indexRouter from './routes/index';
-import usersRouter from './routes/users';
 import { sequelize, Sequelize } from './models'
 import sequelizeHandler from './core/handlers/sequelize-error-handler';
 
@@ -29,7 +28,6 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 app.use('/api', indexRouter);
-app.use('/users', usersRouter);
 app.use((req, res, next) => {
     res.status(404).send("Route not found.")
 })
