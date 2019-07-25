@@ -16,6 +16,7 @@ module.exports = (sequelize, DataTypes) => {
   };
   Teacher.prototype.registerStudents = function (studentsEmail) {
     return sequelize.transaction(async t => {
+      // Find or create all the given students 
       const students = await Promise.all(studentsEmail.map(async (email) => {
         const [ student ] =  await sequelize.models.Student.findOrCreate({
           where: {
@@ -23,6 +24,7 @@ module.exports = (sequelize, DataTypes) => {
           }, transaction: t })
           return student;
         }))
+      // Associate student with this teacher
       return this.addStudents(students, { transaction: t });
     })
   }

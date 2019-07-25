@@ -5,9 +5,11 @@ import { Op } from 'sequelize';
 import queryString from 'query-string';
 
 function refreshDatabase() {
+    // Create fresh tables with schema
     return models.sequelize.sync({ force: true })
 }
 
+// Helper function to get a teacher model quickly
 async function getTeacher(email) {
     const [teacher] = await models.Teacher.findOrCreate({ where: { email }});
     return teacher;
@@ -39,11 +41,14 @@ describe('As a teacher, I want to register one or more students to a specified t
                 model: models.Teacher,
             }]
         })
+        // Should see the registered students in the database
         expect(students.length).toBe(params.students.length)
+
+        // Check student is registered by the given teacher
         expect(students).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
-                    email: 'studentjon@example.com',
+                    email: params.students[0],
                     Teachers: 
                         expect.arrayContaining([
                             expect.objectContaining({
@@ -52,7 +57,7 @@ describe('As a teacher, I want to register one or more students to a specified t
                     ])
                 })
             ])
-          )
+        )
         done()
     })
 
@@ -137,6 +142,7 @@ describe('As a teacher, I want to suspend a specified student.', () => {
             })
             .expect(204);
         const student = await models.Student.findOne({ where: { email: studentEmail }})
+        // Should be suspended after the API call
         expect(student.suspendedAt).not.toBeNull()
         done()
     })
@@ -164,6 +170,7 @@ describe('As a teacher, I want to retrieve a list of students who can receive a 
             })
             .expect(200)
             .expect({
+                // Contains tagged students
                 recipients: teacherStudentsEmail.concat(studentsEmail)
             });
         done()

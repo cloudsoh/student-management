@@ -1,6 +1,7 @@
 import { Sequelize } from "../../models";
 import { BulkRecordError } from "sequelize/lib/errors";
 
+// Retrieve error messages from the Error object
 function extractValidationErrorMessages(e, messages = []) {
     e.errors.forEach((error) => {
         let message;
@@ -43,14 +44,18 @@ function sequelizeHandler(err, req, res, next) {
 
     let messages = {};
     err.forEach((error) => {
+        // Set the error to the 'real error' in BulkRecordError
         if (error instanceof BulkRecordError) {
             error = error.errors;
         }
+
+        // Extract error message if it's validation error
         if (error instanceof Sequelize.ValidationError) {
             messages = extractValidationErrorMessages(error, messages);
         }
     })
 
+    // If there's no validation error, then pass to next handler
     if (Object.keys(messages).length < 1) return next(err)
 
     res.status(422).send({ errors: messages })
