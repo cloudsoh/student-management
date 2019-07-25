@@ -56,11 +56,11 @@ describe('As a teacher, I want to register one or more students to a specified t
         done()
     })
 
-    it('Fail Case (Teacher not found)', async done => {
+    it('Success Case (Teacher is created if no found)', async done => {
         await agent.post('/api/register')
             .set('Content-Type', 'application/json')
             .send(params)
-            .expect(404);
+            .expect(204);
         done()
     })
 

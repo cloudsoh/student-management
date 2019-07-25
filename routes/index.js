@@ -7,32 +7,19 @@ const sequelize = models.sequelize;
 var express = require('express');
 var router = express.Router();
 
-
-router.post('/teachers', [
-  check('email').isEmail(),
-], asyncHandler(async (req, res, next) => {
-  const { email } = req.body;
-  
-  await models.Teacher.create({ email })
-
-  res.sendStatus(204);
-}));
-
 router.post('/register', [
   check('teacher').isEmail(),
   check('students').isArray(),
   check('students.*').isEmail(),
 ], asyncHandler(async (req, res, next) => {
   const { teacher: teacherEmail, students: studentsEmail } = req.body;
-  const teacher = await models.Teacher.findOne({
+
+  const [teacher] = await models.Teacher.findOrCreate({
     where: {
       email: teacherEmail
     }
   })
-  if (!teacher) {
-    res.status(404).send('Teacher not found');
-    return;
-  }
+
   const result = await teacher.registerStudents(studentsEmail);
   res.sendStatus(204);
 }));
