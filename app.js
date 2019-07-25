@@ -1,6 +1,5 @@
 import 'dotenv/config';
 import express from 'express';
-import path from 'path';
 import cookieParser from 'cookie-parser';
 import logger from 'morgan';
 import fs from 'fs';
@@ -17,8 +16,11 @@ var log_file = fs.createWriteStream(__dirname + '/debug.log', {flags : 'a'});
 var log_stdout = process.stdout;
 
 console.error = function(d) { //
-  log_file.write(util.format(d) + '\n');
-  log_stdout.write(util.format(d) + '\n');
+    const now = new Date();
+    const time = now.getFullYear() + "-" + (now.getMonth() + 1) + "-" + now.getDate() + " " + now.getHours() + ":" + now.getMinutes() + ":" + now.getSeconds() 
+    d = `[${time}]: ${d}`
+    log_file.write(util.format(d) + '\n');
+    log_stdout.write(util.format(d) + '\n');
 };
 
 sequelize.sync();
